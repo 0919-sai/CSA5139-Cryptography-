@@ -1,0 +1,129 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define SIZE 5
+void prepareKey(char key[], char table[SIZE][SIZE]) {
+    char letters[26] = {0};
+    int len = strlen(key);
+    int row = 0, col = 0;
+    for (int i = 0; i < len; i++) {
+        if (!isalpha(key[i]) || key[i] == 'J')
+            continue;
+        if (letters[toupper(key[i]) - 'A'] == 0) {
+            table[row][col] = toupper(key[i]);
+            letters[toupper(key[i]) - 'A'] = 1;
+            col++;
+            if (col == SIZE) {
+                col = 0;
+                row++;
+            }
+        }
+    }
+    for (char c = 'A'; c <= 'Z'; c++) {
+        if (c == 'J')
+            continue;
+        if (letters[c - 'A'] == 0) {
+            table[row][col] = c;
+            col++;
+            if (col == SIZE) {
+                col = 0;
+                row++;
+            }
+        }
+    }
+}
+void findPosition(char table[SIZE][SIZE], char letter, int *row, int *col) {
+    for (*row = 0; *row < SIZE; (*row)++) {
+        for (*col = 0; *col < SIZE; (*col)++) {
+            if (table[*row][*col] == letter)
+                return;
+        }
+    }
+}
+void encryptPair(char table[SIZE][SIZE], char a, char b, char *result) {
+    int row1, col1, row2, col2;
+    findPosition(table, toupper(a), &row1, &col1);
+    findPosition(table, toupper(b), &row2, &col2);
+   if (row1 == row2) { 
+        result[0] = table[row1][(col1 + 1) % SIZE];
+        result[1] = table[row2][(col2 + 1) % SIZE];
+    } else if (col1 == col2) { 
+        result[0] = table[(row1 + 1) % SIZE][col1];
+        result[1] = table[(row2 + 1) % SIZE][col2];
+    } else { 
+        result[0] = table[row1][col2];
+        result[1] = table[row2][col1];
+    }
+}
+void decryptPair(char table[SIZE][SIZE], char a, char b, char *result) {
+    int row1, col1, row2, col2;
+    findPosition(table, toupper(a), &row1, &col1);
+    findPosition(table, toupper(b), &row2, &col2);
+    if (row1 == row2) { 
+        result[0] = table[row1][(col1 - 1 + SIZE) % SIZE];
+        result[1] = table[row2][(col2 - 1 + SIZE) % SIZE];
+    } else if (col1 == col2) { 
+        result[0] = table[(row1 - 1 + SIZE) % SIZE][col1];
+        result[1] = table[(row2 - 1 + SIZE) % SIZE][col2];
+    } else { 
+        result[0] = table[row1][col2];
+        result[1] = table[row2][col1];
+    }
+}
+void preprocessText(char text[], char preprocessed[]) {
+    int j = 0;
+    for (int i = 0; text[i] != '\0'; i++) {
+        if (isalpha(text[i])) {
+            preprocessed[j++] = toupper(text[i]);
+            if (text[i] == 'J' && text[i + 1] == 'J')
+                preprocessed[j++] = 'X';
+        }
+    }
+    preprocessed[j] = '\0';
+}
+void encrypt(char table[SIZE][SIZE], char plaintext[], char ciphertext[]) {
+    char preprocessed[2 * strlen(plaintext)];
+    preprocessText(plaintext, preprocessed);
+
+    int len = strlen(preprocessed);
+    for (int i = 0; i < len; i += 2) {
+        encryptPair(table, preprocessed[i], preprocessed[i + 1], &ciphertext[i]);
+    }
+}
+void decrypt(char table[SIZE][SIZE], char ciphertext[], char decrypted[]) {
+    int len = strlen(ciphertext);
+    for (int i = 0; i < len; i += 2) {
+        decryptPair(table, ciphertext[i], ciphertext[i + 1], &decrypted[i]);
+    }
+}
+void displayKeyTable(char table[SIZE][SIZE]) {
+    printf("Playfair Key Table:\n");
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            printf("%c ", table[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int main() {
+    char key[50], plaintext[100], ciphertext[100], decrypted[100];
+    char table[SIZE][SIZE] = {0};
+
+    printf("Enter the key (without spaces, J is considered I): ");
+    scanf("%s", key);
+
+    prepareKey(key, table);
+    displayKeyTable(table);
+
+    printf("\nEnter the plaintext: ");
+    scanf("%s", plaintext);
+
+    encrypt(table, plaintext, ciphertext);
+    printf("\nEncrypted ciphertext: %s\n", ciphertext);
+
+    decrypt(table, ciphertext, decrypted);
+    printf("\nDecrypted plaintext: %s\n", decrypted);
+
+    return 0;
+}
